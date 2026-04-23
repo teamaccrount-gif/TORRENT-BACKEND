@@ -1,0 +1,371 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Alarm {
+  id             Int       @id @default(autoincrement())
+  tag            String
+  alarm          String
+  priority       Int
+  class          Int
+  status         Int
+  timestamp1     DateTime
+  timestamp2     DateTime?
+  acknowledgment Boolean   @default(false)
+
+  @@index([tag, timestamp2])
+  @@index([timestamp1])
+}
+
+model TelemetryData {
+  id         Int    @id @default(autoincrement())
+  country    String
+  region     String
+  area       String
+  cgs        String
+  station    String
+  compressor String
+  point      String
+  parameter  String
+  tag        String @unique
+}
+
+model Country {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  @@map("country")
+}
+
+model Region {
+  id       Int                      @id @default(autoincrement())
+  name     String
+  country  String
+  boundary Unsupported("geometry")?
+
+  @@unique([name, country])
+  @@index([boundary], map: "idx_region_boundary", type: Gist)
+  @@map("region")
+}
+
+model Area {
+  id       Int                      @id @default(autoincrement())
+  name     String
+  region   String
+  country  String
+  boundary Unsupported("geometry")?
+
+  @@unique([name, region])
+  @@index([boundary], map: "idx_area_boundary", type: Gist)
+  @@map("area")
+}
+
+model Cgs {
+  id      Int    @id @default(autoincrement())
+  name    String
+  area    String
+  region  String
+  country String
+
+  @@unique([name, area])
+  @@map("cgs")
+}
+
+model Station {
+  id       Int                      @id @default(autoincrement())
+  name     String
+  cgs      String
+  area     String
+  region   String
+  country  String
+  location Unsupported("geometry")?
+
+  @@unique([name, cgs])
+  @@index([location], map: "idx_station_location", type: Gist)
+  @@map("station")
+}
+
+model Compressor {
+  id      Int    @id @default(autoincrement())
+  name    String
+  station String
+  cgs     String
+  area    String
+  region  String
+  country String
+
+  @@unique([name, station])
+  @@map("compressor")
+}
+
+model Dispenser {
+  id      Int    @id @default(autoincrement())
+  name    String
+  station String
+  cgs     String
+  area    String
+  region  String
+  country String
+
+  @@unique([name, station])
+  @@map("dispenser")
+}
+
+model Device {
+  id      Int    @id @default(autoincrement())
+  name    String
+  station String
+  cgs     String
+  area    String
+  region  String
+  country String
+
+  @@unique([name, station])
+  @@map("device")
+}
+
+model Png {
+  id      Int    @id @default(autoincrement())
+  name    String
+  cgs     String
+  area    String
+  region  String
+  country String
+
+  @@unique([name, cgs])
+  @@map("png")
+}
+
+model Lcng {
+  id      Int    @id @default(autoincrement())
+  name    String
+  cgs     String
+  area    String
+  region  String
+  country String
+
+  @@unique([name, cgs])
+  @@map("lcng")
+}
+
+model Drs {
+  id      Int    @id @default(autoincrement())
+  name    String
+  png     String
+  cgs     String
+  area    String
+  region  String
+  country String
+
+  @@unique([name, png])
+  @@map("drs")
+}
+
+model Industrial {
+  id      Int    @id @default(autoincrement())
+  name    String
+  drs     String
+  png     String
+  cgs     String
+  area    String
+  region  String
+  country String
+
+  @@unique([name, drs])
+  @@map("industrial")
+}
+
+model Commercial {
+  id      Int    @id @default(autoincrement())
+  name    String
+  drs     String
+  png     String
+  cgs     String
+  area    String
+  region  String
+  country String
+
+  @@unique([name, drs])
+  @@map("commercial")
+}
+
+model Domestic {
+  id      Int    @id @default(autoincrement())
+  name    String
+  drs     String
+  png     String
+  cgs     String
+  area    String
+  region  String
+  country String
+
+  @@unique([name, drs])
+  @@map("domestic")
+}
+
+model User {
+  id             Int            @id @default(autoincrement())
+  first_name     String
+  last_name      String
+  email          String         @unique
+  password       String
+  phone          String?
+  is_active      Boolean        @default(true)
+  created_at     DateTime       @default(now())
+  updated_at     DateTime       @updatedAt
+  role_id        Int
+  refresh_tokens RefreshToken[]
+  access         UserAccess?
+  role           Role           @relation(fields: [role_id], references: [id])
+
+  @@map("users")
+}
+
+model Role {
+  id               Int              @id @default(autoincrement())
+  name             String           @unique
+  role_permissions RolePermission[]
+  users            User[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id               Int              @id @default(autoincrement())
+  name             String           @unique
+  description      String?
+  role_permissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  id            Int        @id @default(autoincrement())
+  role_id       Int
+  permission_id Int
+  permission    Permission @relation(fields: [permission_id], references: [id])
+  role          Role       @relation(fields: [role_id], references: [id])
+
+  @@unique([role_id, permission_id])
+  @@map("role_permissions")
+}
+
+model UserAccess {
+  id       Int      @id @default(autoincrement())
+  user_id  Int      @unique
+  level    String
+  regions  String[]
+  areas    String[]
+  stations String[]
+  user     User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("user_access")
+}
+
+model RefreshToken {
+  id         Int      @id @default(autoincrement())
+  token      String   @unique
+  user_id    Int
+  expires_at DateTime
+  created_at DateTime @default(now())
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("refresh_tokens")
+}
+
+model LoginLog {
+  id             Int      @id @default(autoincrement())
+  user_id        Int?
+  email          String
+  status         String
+  failure_reason String?
+  ip_address     String?
+  user_agent     String?
+  os             String?
+  browser        String?
+  device_type    String?
+  login_at       DateTime @default(now())
+  request_id     String?
+
+  @@index([email])
+  @@index([login_at])
+  @@index([ip_address])
+  @@map("login_logs")
+}
+
+model EventLog {
+  id         Int      @id @default(autoincrement())
+  user_id    Int?
+  email      String?
+  role       String?
+  endpoint   String?
+  method     String?
+  params     Json?
+  ip_address String?
+  user_agent String?
+  request_id String?
+  created_at DateTime @default(now())
+
+  @@index([email])
+  @@index([created_at])
+  @@map("event_logs")
+}
+
+model TransactionLog {
+  id         Int      @id @default(autoincrement())
+  user_id    Int?
+  email      String?
+  role       String?
+  endpoint   String?
+  method     String?
+  ip_address String?
+  request_id String?
+  created_at DateTime @default(now())
+
+  @@index([email])
+  @@index([created_at])
+  @@map("transaction_logs")
+}
+
+model ErrorLog {
+  id         Int      @id @default(autoincrement())
+  user_id    Int?
+  email      String?
+  role       String?
+  endpoint   String?
+  method     String?
+  error      String?
+  ip_address String?
+  request_id String?
+  created_at DateTime @default(now())
+  user_agent String?
+
+  @@index([email])
+  @@index([created_at])
+  @@map("error_logs")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model spatial_ref_sys {
+  srid      Int     @id
+  auth_name String? @db.VarChar(256)
+  auth_srid Int?
+  srtext    String? @db.VarChar(2048)
+  proj4text String? @db.VarChar(2048)
+}
+
+/// This table is a partition table and requires additional setup for migrations. Visit https://pris.ly/d/partition-tables for more info.
+model History {
+  id           BigInt   @default(autoincrement())
+  telemetry_id Int
+  value        Float
+  quality      Int
+  timestamp    DateTime @db.Timestamp(6)
+
+  @@id([id, timestamp])
+}
