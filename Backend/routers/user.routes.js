@@ -15,7 +15,7 @@ import { generateId } from "../middlewares/generateid.js";
 const router = express.Router();
 
 router.get("/role", generateId, authenticate, getRoles);
-router.get("/", generateId, authenticate, authorize("edit_user"), getUsers);
+router.get("/", generateId, authenticate, getUsers);
 router.get("/:id", generateId, authenticate, authorize("edit_user"), getSingleUser)
 router.post(
   "/",

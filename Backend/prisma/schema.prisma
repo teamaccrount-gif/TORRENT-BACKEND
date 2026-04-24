@@ -77,13 +77,15 @@ model Cgs {
 }
 
 model Station {
-  id       Int                      @id @default(autoincrement())
-  name     String
-  cgs      String
-  area     String
-  region   String
-  country  String
-  location Unsupported("geometry")?
+  id           Int                      @id @default(autoincrement())
+  name         String
+  cgs          String
+  area         String
+  region       String
+  country      String
+  location     Unsupported("geometry")?
+  station_type station_type             @default(online_station)
+  status       station_status           @default(offline)
 
   @@unique([name, cgs])
   @@index([location], map: "idx_station_location", type: Gist)
@@ -291,6 +293,7 @@ model LoginLog {
   device_type    String?
   login_at       DateTime @default(now())
   request_id     String?
+  location       String?  @db.VarChar(255)
 
   @@index([email])
   @@index([login_at])
@@ -368,4 +371,18 @@ model History {
   timestamp    DateTime @db.Timestamp(6)
 
   @@id([id, timestamp])
+}
+
+enum station_status {
+  online
+  offline
+  fault
+  maintenance
+}
+
+enum station_type {
+  online_station
+  mother_station
+  booster_station
+  daughter_station
 }

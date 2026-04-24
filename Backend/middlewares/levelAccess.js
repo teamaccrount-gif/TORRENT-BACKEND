@@ -1,39 +1,31 @@
-// Level access rules:
-// super_admin  → no filter, sees everything
-// admin        → region scoped, optionally limited to specific areas
-// manager      → region scoped, optionally limited to specific areas and stations
-// engineer     → single station only
-// operator     → single station only
-
 export const applyLevelAccess = (req, res, next) => {
   const { role, level, regions, areas, stations } = req.user;
 
+  // super_admin bypasses level entirely
   if (role === "super_admin") {
     req.accessFilter = {};
     return next();
   }
 
-  switch (role) {
-    case "admin":
-      // region scoped — optionally limited to specific areas
+  if (!level) {
+    return res.status(403).json({ success: false, error: "No level access assigned" });
+  }
+
+  switch (level) {
+    case "region":
       req.accessFilter = {
         region: { in: regions },
         ...(areas.length > 0 && { area: { in: areas } }),
       };
       break;
 
-    case "manager":
-      // region scoped — optionally limited to specific areas and stations
+    case "area":
       req.accessFilter = {
-        region: { in: regions },
-        ...(areas.length > 0    && { area:    { in: areas    } }),
-        ...(stations.length > 0 && { station: { in: stations } }),
+        area: { in: areas },
       };
       break;
 
-    case "engineer":
-    case "operator":
-      // single station only
+    case "station":
       if (!stations || stations.length === 0) {
         return res.status(403).json({ success: false, error: "No station access assigned" });
       }
@@ -43,7 +35,7 @@ export const applyLevelAccess = (req, res, next) => {
       break;
 
     default:
-      return res.status(403).json({ success: false, error: "No level access assigned" });
+      return res.status(403).json({ success: false, error: "Invalid level access" });
   }
 
   next();

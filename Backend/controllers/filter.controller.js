@@ -14,7 +14,6 @@ export const getTags = async (req, res) => {
   } catch (err) {
     await logError(req, err);
     res.status(500).json({ error: err.message });
-    console.log(err);
   }
 };
 
@@ -44,7 +43,6 @@ export const getRawData = async (req, res) => {
   } catch (err) {
     await logError(req, err);
     res.status(500).json({ error: err.message });
-    console.log(err);
   }
 }
 
@@ -75,7 +73,6 @@ export const getAggrigationData = async (req, res) => {
   } catch (err) {
     await logError(req, err);
     res.status(500).json({ error: err.message });
-    console.log(err);
   }
 }
 
@@ -110,7 +107,6 @@ export const getDelta = async (req, res) => {
   } catch (err) {
     await logError(req, err);
     res.status(500).json({ error: err.message });
-    console.log(err);
   }
 }
 

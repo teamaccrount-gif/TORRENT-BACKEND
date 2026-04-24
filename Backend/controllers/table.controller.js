@@ -1,21 +1,11 @@
 import { prisma } from "../lib/prisma.js";
 import { logError, logEvent, logTransaction } from "../services/logs.service.js";
+import { checkAccess, isUnrestricted, inClause } from "../helpers/filterHelpers.js";
 
-// Returns 403 if accessFilter is null (user has no level assigned)
-function checkAccess(res, accessFilter) {
-  if (accessFilter === null) {
-    res.status(403).json({ success: false, error: "No level access assigned" });
-    return false;
-  }
-  return true;
-}
-
-// ─── Hierarchy tables (region/area/cgs have extra stat columns) ───────────────
 
 export const getCountryTable = async (req, res) => {
   try {
     await logEvent(req);
-    // country table — super_admin only sees this, no level filter needed
     const data = await prisma.country.findMany();
     await logTransaction(req);
     res.status(200).json({ success: true, data });
@@ -30,10 +20,15 @@ export const getRegionTable = async (req, res) => {
     await logEvent(req);
     if (!checkAccess(res, req.accessFilter)) return;
 
+    const { region } = req.accessFilter;
+
+    if (!region && !isUnrestricted(req.accessFilter)) {
+      return res.status(403).json({ success: false, error: "Access denied" });
+    }
+
     const data = await prisma.region.findMany({
-      where: req.accessFilter.region
-        ? { name: req.accessFilter.region }
-        : {},
+      // where: region ? { name: inClause(region) } : {},
+      where: region ? { name: { in: region.in } } : {},
     });
 
     await logTransaction(req);
@@ -49,9 +44,15 @@ export const getAreaTable = async (req, res) => {
     await logEvent(req);
     if (!checkAccess(res, req.accessFilter)) return;
 
+    const { region, area } = req.accessFilter;
     const where = {};
-    if (req.accessFilter.region) where.region = req.accessFilter.region;
-    if (req.accessFilter.area)   where.name   = req.accessFilter.area;
+
+    if (!region && !area && !isUnrestricted(req.accessFilter)) {
+      return res.status(403).json({ success: false, error: "Access denied" });
+    }
+
+    if (region) where.region = inClause(region);
+    if (area)   where.name   = inClause(area);
 
     const data = await prisma.area.findMany({ where });
 
@@ -68,9 +69,15 @@ export const getCgsTable = async (req, res) => {
     await logEvent(req);
     if (!checkAccess(res, req.accessFilter)) return;
 
+    const { region, area } = req.accessFilter;
     const where = {};
-    if (req.accessFilter.region) where.region = req.accessFilter.region;
-    if (req.accessFilter.area)   where.area   = req.accessFilter.area;
+
+    if (!region && !area && !isUnrestricted(req.accessFilter)) {
+      return res.status(403).json({ success: false, error: "Access denied" });
+    }
+
+    if (region) where.region = inClause(region);
+    if (area)   where.area   = inClause(area);
 
     const data = await prisma.cgs.findMany({ where });
 
@@ -87,11 +94,12 @@ export const getStationTable = async (req, res) => {
     await logEvent(req);
     if (!checkAccess(res, req.accessFilter)) return;
 
+    const { region, area, station } = req.accessFilter;
     const where = {};
-    if (req.accessFilter.region)  where.region = req.accessFilter.region;
-    if (req.accessFilter.area)    where.area   = req.accessFilter.area;
-    // engineer/operator filter — station key maps to station name
-    if (req.accessFilter.station) where.name   = req.accessFilter.station;
+
+    if (region)  where.region = inClause(region);
+    if (area)    where.area   = inClause(area);
+    if (station) where.name   = inClause(station);
 
     const data = await prisma.station.findMany({ where });
 
@@ -108,12 +116,12 @@ const fetchAssetTable = (modelName) => async (req, res) => {
     await logEvent(req);
     if (!checkAccess(res, req.accessFilter)) return;
 
+    const { region, area, station } = req.accessFilter;
     const where = {};
-    if (req.accessFilter.region)  where.region  = req.accessFilter.region;
-    if (req.accessFilter.area)    where.area     = req.accessFilter.area;
-    // manager uses station key to filter asset tables directly
-    // engineer/operator also use station key
-    if (req.accessFilter.station) where.station  = req.accessFilter.station;
+
+    if (region)  where.region  = inClause(region);
+    if (area)    where.area    = inClause(area);
+    if (station) where.station = inClause(station);
 
     const data = await prisma[modelName].findMany({ where });
 
@@ -137,9 +145,11 @@ export const getPngTable = async (req, res) => {
     await logEvent(req);
     if (!checkAccess(res, req.accessFilter)) return;
 
+    const { region, area } = req.accessFilter;
     const where = {};
-    if (req.accessFilter.region) where.region = req.accessFilter.region;
-    if (req.accessFilter.area)   where.area   = req.accessFilter.area;
+
+    if (region) where.region = inClause(region);
+    if (area)   where.area   = inClause(area);
 
     const data = await prisma.png.findMany({ where });
 
@@ -156,9 +166,11 @@ export const getLcngTable = async (req, res) => {
     await logEvent(req);
     if (!checkAccess(res, req.accessFilter)) return;
 
+    const { region, area } = req.accessFilter;
     const where = {};
-    if (req.accessFilter.region) where.region = req.accessFilter.region;
-    if (req.accessFilter.area)   where.area   = req.accessFilter.area;
+
+    if (region) where.region = inClause(region);
+    if (area)   where.area   = inClause(area);
 
     const data = await prisma.lcng.findMany({ where });
 
@@ -175,9 +187,11 @@ export const getDrsTable = async (req, res) => {
     await logEvent(req);
     if (!checkAccess(res, req.accessFilter)) return;
 
+    const { region, area } = req.accessFilter;
     const where = {};
-    if (req.accessFilter.region) where.region = req.accessFilter.region;
-    if (req.accessFilter.area)   where.area   = req.accessFilter.area;
+
+    if (region) where.region = inClause(region);
+    if (area)   where.area   = inClause(area);
 
     const data = await prisma.drs.findMany({ where });
 
@@ -189,15 +203,15 @@ export const getDrsTable = async (req, res) => {
   }
 };
 
+// ── Dropdown helpers (no level filter — used for admin UI dropdowns) ──────────
+
 export const getRegion = async (req, res) => {
   try {
     await logEvent(req);
-
     const data = await prisma.region.findMany({
       select: { name: true },
-      orderBy: { name: "asc" }
+      orderBy: { name: "asc" },
     });
-
     await logTransaction(req);
     res.status(200).json({ success: true, data });
   } catch (err) {
@@ -209,14 +223,11 @@ export const getRegion = async (req, res) => {
 export const getAreasByRegion = async (req, res) => {
   try {
     await logEvent(req);
-
     const { region } = req.params;
-
     const data = await prisma.area.findMany({
       where: { region },
       select: { name: true, region: true },
     });
-
     await logTransaction(req);
     res.status(200).json({ success: true, data });
   } catch (err) {
@@ -228,14 +239,11 @@ export const getAreasByRegion = async (req, res) => {
 export const getStationsByArea = async (req, res) => {
   try {
     await logEvent(req);
-
     const { area } = req.params;
-
     const data = await prisma.station.findMany({
       where: { area },
       select: { name: true, area: true, region: true },
     });
-
     await logTransaction(req);
     res.status(200).json({ success: true, data });
   } catch (err) {

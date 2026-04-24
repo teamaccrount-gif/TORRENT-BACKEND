@@ -39,8 +39,9 @@ router.get("/drs",        generateId, authenticate, applyLevelAccess, getDrsTabl
 router.get("/industrial", generateId, authenticate, applyLevelAccess, getIndustrialTable);
 router.get("/commercial", generateId, authenticate, applyLevelAccess, getCommercialTable);
 router.get("/domestic",   generateId, authenticate, applyLevelAccess, getDomesticTable);
-router.get("/areas-by-region/:region",   generateId, authenticate, applyLevelAccess, getAreasByRegion);
-router.get("/stations-by-area/:area",    generateId, authenticate, applyLevelAccess, getStationsByArea);
-router.get("/all-regions",    generateId, authenticate, applyLevelAccess, getRegion);
+
+router.get("/areas-by-region/:region",   generateId, authenticate, getAreasByRegion);
+router.get("/stations-by-area/:area",    generateId, authenticate, getStationsByArea);
+router.get("/all-regions",    generateId, authenticate, getRegion);
 
 export default router;

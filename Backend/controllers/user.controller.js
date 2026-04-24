@@ -153,13 +153,19 @@ export const updateUser = async (req, res) => {
 
     const { first_name, last_name, email, password, phone, role_id, is_active, level, regions, areas, stations } = req.body;
 
+    let hashedPassword;
+
+    if (password) {
+      hashedPassword = await bcrypt.hash(password, 10);
+    }
+
     const user = await prisma.user.update({
       where: { id: parseInt(id) },
       data: {
         first_name,
         last_name,
         email,
-        password,
+        ...(hashedPassword && { password: hashedPassword }), // only update if exists
         phone,
         role_id,
         is_active,

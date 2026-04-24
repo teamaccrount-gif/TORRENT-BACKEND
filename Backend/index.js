@@ -10,6 +10,7 @@ import userRoutes from "./routers/user.routes.js";
 import { initSocket } from "./socket/socket.service.js";
 import { startPgListener } from "./services/pgListener.service.js";
 import { ensurePartitionsExist, startPartitionCron } from "./services/partition.service.js";
+import dashboardRoutes from "./routers/dashboard.routes.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -28,6 +29,7 @@ app.use("/filter", filterRoutes);
 app.use("/tables", tableRoutes);
 app.use("/auth",  authRoutes);
 app.use("/users", userRoutes);
+app.use("/dashboard", dashboardRoutes);
 
 initSocket(server);
 startPgListener();

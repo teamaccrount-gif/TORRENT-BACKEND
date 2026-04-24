@@ -26,12 +26,14 @@ export async function logLogin({ req, email, user_id = null, status, failure_rea
     const ip        = req.headers["x-forwarded-for"]?.split(",")[0] || req.socket.remoteAddress;
     const userAgent = req.headers["user-agent"] || null;
 
-    // Parse browser, OS, device from user agent string
     const parser     = new UAParser(userAgent);
     const parsed     = parser.getResult();
     const browser    = parsed.browser.name    ? `${parsed.browser.name} ${parsed.browser.version ?? ""}`.trim() : null;
     const os         = parsed.os.name         ? `${parsed.os.name} ${parsed.os.version ?? ""}`.trim()          : null;
-    const deviceType = parsed.device.type     ?? "desktop"; // ua-parser returns undefined for desktop
+    const deviceType = parsed.device.type     ?? "desktop";
+
+    // Fetch location — runs in parallel with the rest, non-blocking
+    const location = await getLocationFromIp(ip);
 
     await prisma.loginLog.create({
       data: {
@@ -44,11 +46,11 @@ export async function logLogin({ req, email, user_id = null, status, failure_rea
         browser,
         os,
         device_type: deviceType,
+        location,              
         request_id:  req.requestId ?? null,
       },
     });
   } catch (err) {
-    // Login log failure should never crash the auth flow
     console.error("Login log error:", err.message);
   }
 }
